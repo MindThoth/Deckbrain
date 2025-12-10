@@ -14,3 +14,9 @@ Every update (by humans or AI) must be recorded.
 - Version increment  
 - Model used  
 - Summary of modifications  
+
+### 2025-12-10 – v0.1.1-docs
+- Added `DECKBRAIN_FOUNDATION.md` as the single source for vision, architecture, modules, roadmap, and AI/human rules; merged prior doc details.
+- Shortened `README.md` and refocused `PROJECT_GUIDE.md` to point to the foundation and emphasize workflow.
+- Removed superseded docs (`docs/architecture.md`, `docs/modules.md`, `docs/roadmap.md`) to avoid fragmentation.
+- Model: gpt-5.1-codex-max-low.

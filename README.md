@@ -1,30 +1,14 @@
 # DeckBrain
 
-DeckBrain is a modular data intelligence platform for commercial fishing vessels. It is built around three core components:
+DeckBrain is a modular data intelligence platform for commercial fishing vessels. It pairs a Raspberry Pi connector that buffers Olex exports with a FastAPI backend and a map-focused Next.js dashboard so captains and owners can replay trips, track history, and keep tow notes (with photos) safely in the cloud. Future releases will layer in AI assistance for planning and risk avoidance.
 
-1. **Raspberry Pi Connector (on the vessel)**  
-   A Python-based offline-first service that runs on a dedicated Raspberry Pi.  
-   It monitors exported Olex data (tracks, soundings, marks, bathymetry), queues files locally, and uploads them securely when internet becomes available.  
-   It also sends heartbeat status updates and checks for remote software updates.
+## Start Here
 
-2. **Core Cloud API (FastAPI backend)**  
-   A secure central backend that:  
-   - Stores uploaded files per vessel (device_id)  
-   - Tracks connector health, versions, and sync status  
-   - Builds trips and track data for map replay  
-   - Stores tow notes (typed or image-based)  
-   - Serves JSON data to the dashboard and future mobile apps  
+- Read `DECKBRAIN_FOUNDATION.md` for the full vision, architecture, module pattern, and roadmap.
+- Then read `PROJECT_GUIDE.md` for contribution rules, branching, and how to log changes.
 
-3. **Next.js Dashboard**  
-   A web dashboard designed for captains and vessel owners.  
-   Features include:  
-   - Interactive map with marine-style layers  
-   - Trip replay and tow visualization  
-   - Long-term fishing ground history  
-   - Catch/tow notes, including photo uploads of handwritten logs  
-   - Live vessel sync status  
-   - Future AI Assist tab for predictive fishing insights  
+## Components (snapshot)
 
-DeckBrain uses a **core + modules** architecture across all components for scalability and maintainability.
-
-See `PROJECT_GUIDE.md` for development guidelines.
+- Raspberry Pi connector: offline-first file queueing and upload, heartbeats, update checks.
+- Core API (FastAPI): device auth, file ingestion, trips/history/tow notes endpoints.
+- Dashboard (Next.js): map UI for trips, history, live status, notes, and future AI Assist.
