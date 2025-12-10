@@ -332,11 +332,11 @@ Rough development roadmap (can be adjusted as needed):
 
 Any AI model (Copilot, Cursor, Claude, ChatGPT, etc.) that edits this repo should:
 1. Read this file (`DECKBRAIN_FOUNDATION.md`) to understand the big picture.
-2. Read `PROJECT_GUIDE.md` for rules on branching, commits, and module boundaries.
+2. Read `PROJECT_GUIDE.md` for rules on branching, commits, and module boundaries. For detailed information on how we use branches, versions, DEVLOG.md, and CHANGELOG.md, please see PROJECT_GUIDE.md.
 3. Check the latest entries in `DEVLOG.md` to see what recently changed.
 4. Respect the core + modules architecture:
-   - don’t tangle modules
-   - don’t bypass core helpers.
+   - don't tangle modules
+   - don't bypass core helpers.
 5. After making changes:
    - log them in `DEVLOG.md` (date, version tag, model, summary).
    - keep the code style consistent with existing files.

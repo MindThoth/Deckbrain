@@ -20,3 +20,11 @@ Every update (by humans or AI) must be recorded.
 - Shortened `README.md` and refocused `PROJECT_GUIDE.md` to point to the foundation and emphasize workflow.
 - Removed superseded docs (`docs/architecture.md`, `docs/modules.md`, `docs/roadmap.md`) to avoid fragmentation.
 - Model: gpt-5.1-codex-max-low.
+
+### 2025-12-10 – v0.1.1-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Added a "Versioning, Branches, and Logs" section to PROJECT_GUIDE.md.
+  - Linked DECKBRAIN_FOUNDATION.md to PROJECT_GUIDE.md for workflow details.
+- Notes:
+  - This entry tests and documents the new logging and branching process.
