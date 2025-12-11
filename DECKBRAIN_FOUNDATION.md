@@ -343,5 +343,11 @@ Any AI model (Copilot, Cursor, Claude, ChatGPT, etc.) that edits this repo shoul
 
 This keeps DeckBrain clean, understandable, and safe to evolve.
 
+## 13. Where to Find More Docs
+
+- Architecture details: `docs/architecture/overview.md`, `docs/architecture/modules.md`
+- Development practices: `docs/development/environment_setup.md`, `docs/development/testing_strategy.md`
+- Product roadmap: `docs/product/feature_roadmap.md`
+
 End of DECKBRAIN_FOUNDATION.md
 

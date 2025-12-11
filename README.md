@@ -7,6 +7,12 @@ DeckBrain is a modular data intelligence platform for commercial fishing vessels
 - Read `DECKBRAIN_FOUNDATION.md` for the full vision, architecture, module pattern, and roadmap.
 - Then read `PROJECT_GUIDE.md` for contribution rules, branching, and how to log changes.
 
+## Documentation Map
+
+- Vision and architecture: `DECKBRAIN_FOUNDATION.md`
+- Workflow and branching: `PROJECT_GUIDE.md`
+- Detailed docs: `docs/` (architecture/, development/, product/)
+
 ## Components (snapshot)
 
 - Raspberry Pi connector: offline-first file queueing and upload, heartbeats, update checks.

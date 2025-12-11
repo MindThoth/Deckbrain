@@ -28,3 +28,13 @@ Every update (by humans or AI) must be recorded.
   - Linked DECKBRAIN_FOUNDATION.md to PROJECT_GUIDE.md for workflow details.
 - Notes:
   - This entry tests and documents the new logging and branching process.
+
+### 2025-12-11 – v0.1.1-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Organized documentation into docs/architecture, docs/development, and docs/product.
+  - Normalized or moved existing docs into the new structure.
+  - Ensured root contains only core summary docs (README, DECKBRAIN_FOUNDATION, PROJECT_GUIDE, DEVLOG, CHANGELOG).
+  - Created code service folders (connector, core-api, dashboard, mobile, scripts) with short README files to mark them as code zones.
+- Notes:
+  - This reorganization establishes a professional structure where all runtime code lives under service folders and all secondary docs live under docs/.
