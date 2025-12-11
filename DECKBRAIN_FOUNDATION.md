@@ -135,6 +135,10 @@ Future data flow additions:
 
 ### 6.1 Connectors (Vendor-Specific Agents)
 
+DeckBrain is a multi-plotter platform designed to support multiple navigation and fishing systems:
+- **Olex**: First supported Linux-based integration using a Raspberry Pi connector (sidecar device connected by network to the Olex unit).
+- **MaxSea TimeZero**: First Windows-based integration using a Windows service connector (runs on same PC as MaxSea or dedicated Windows machine).
+
 Main responsibilities (shared across all connector implementations):
 - Offline-first handling: always safe to run with no internet.
 - Reliable queueing of files to avoid data loss.
@@ -152,6 +156,20 @@ Key behaviors:
 - If server is unreachable: retry later (backoff).
 - Must never delete raw plotter data without explicit design.
 - All connectors use the same upload protocol and data model when talking to Core API.
+
+#### Multi-Plotter Connector Architecture
+
+DeckBrain uses a shared connector core with vendor-specific adapters:
+
+- **connector/shared/**: Common code for configuration, SQLite queue management, HTTP client, heartbeat, and update checking. Both Olex Pi and MaxSea Windows connectors import and reuse this shared core.
+
+- **connector/olex_pi/**: Olex Raspberry Pi agent that runs on a Linux sidecar device, watches Olex export directories, and enqueues files using the shared core.
+
+- **connector/maxsea_win/**: MaxSea Windows agent that runs as a Windows service, watches MaxSea TimeZero export/backup directories, and enqueues files using the shared core.
+
+Both connectors talk to the same Core API using the same endpoints (`/api/upload_file`, `/api/heartbeat`, `/api/check_update`) and authentication model (device_id + api_key). The Core API uses `plotter_type` (in the devices table) and `source_format` (in file_records) fields to distinguish vendor-specific data and route files to appropriate ingestion modules.
+
+For details on how connectors for Olex and MaxSea are structured, see `docs/architecture/multi_plotter_connectors.md`.
 
 ### 6.2 Core API (FastAPI)
 

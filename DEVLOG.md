@@ -47,3 +47,13 @@ Every update (by humans or AI) must be recorded.
   - Tweaked architecture docs (docs/architecture/overview.md, docs/architecture/modules.md) to avoid implying Olex-only support and to mention future MaxSea integration.
 - Notes:
   - This documents the intention to support Olex, MaxSea, and other plotters via separate connector agents feeding a shared Core API. The Dashboard remains plotter-agnostic and works with normalized data from any supported system.
+
+### 2025-12-11 – v0.1.3-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Defined multi-plotter connector architecture for Olex (Raspberry Pi) and MaxSea TimeZero (Windows).
+  - Added docs/architecture/multi_plotter_connectors.md describing shared connector core and vendor-specific agents.
+  - Updated DECKBRAIN_FOUNDATION.md, docs/db_schema.md, and docs/api_spec.md to reflect multi-plotter support using plotter_type and source_format.
+  - Created connector/shared, connector/olex_pi, and connector/maxsea_win directories with README files to mark their roles.
+- Notes:
+  - This establishes Option A: one shared connector core with vendor-specific connectors for Olex and MaxSea, all using the same Core API protocol.

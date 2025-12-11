@@ -1,41 +1,84 @@
 # Multi-Plotter Connector Architecture
 
-DeckBrain is designed to support multiple navigation and fishing plotter systems through vendor-specific connector agents. All connectors feed into a shared, plotter-agnostic Core API and Dashboard.
+DeckBrain is designed to support multiple navigation and fishing plotter systems (at least Olex and MaxSea TimeZero) via separate connector agents that all use a shared upload protocol and common Core API.
+
+## Connector Directory Structure
+
+```
+connector/
+  shared/      -> common queue, HTTP client, heartbeat, config, update logic
+  olex_pi/     -> Raspberry Pi agent that reads Olex export directories
+  maxsea_win/  -> Windows agent that reads MaxSea TimeZero export/backup directories
+```
 
 ## Connector Family Structure
 
 ### Shared Core (`connector/shared/`)
 
-All connector implementations share common functionality:
+The shared connector core provides common functionality used by all vendor-specific connectors:
 
-- **Configuration**: device_id, api_key, base URL, plotter_type
-- **Queue Management**: SQLite-based local queue for offline-first operation
-- **HTTP Client**: standardized upload protocol to Core API
-- **Logging Helpers**: consistent logging across all connectors
-- **Version Management**: reads version.json, checks for updates
-- **Heartbeat Module**: sends periodic status updates with plotter_type
+**Responsibilities:**
+- **Configuration Loading**: Reads config file containing device_id, api_key, server_url, plotter_type
+- **SQLite Queue Management**: Maintains a local SQLite database queue of pending files with fields:
+  - file path
+  - file_type (track, soundings, marks, backup, unknown)
+  - vendor (olex, maxsea, etc.)
+  - status (pending, uploading, uploaded, error)
+- **HTTP Client**: Handles file upload to Core API with retries and exponential backoff
+- **Heartbeat Sender**: Sends periodic heartbeats with:
+  - queue size
+  - last upload status (ok/error)
+  - connector version
+  - plotter_type
+- **Update Checker**: Checks `/api/check_update` for available connector software updates (future behavior)
+
+Both Olex Pi and MaxSea Windows connectors import and reuse this shared code.
 
 ### Vendor-Specific Adapters
 
-Each plotter vendor has its own adapter that handles vendor-specific details:
+#### `connector/olex_pi/` - Olex Connector (Raspberry Pi)
 
-#### `connector/olex_pi/`
-- **Platform**: Linux/Raspberry Pi
-- **Responsibilities**:
-  - Watches Olex export directories
-  - Detects Olex-specific file formats
-  - Parses Olex file structure (if needed for validation)
-  - Uses shared core for queueing and upload
-- **File Detection**: Monitors directories where Olex exports navigation and fishing data
+**Platform**: Linux/Raspberry Pi (sidecar device)
 
-#### `connector/maxsea_win/`
-- **Platform**: Windows
-- **Responsibilities**:
-  - Watches MaxSea TimeZero export/backup directories
-  - Detects MaxSea-specific file formats (e.g., .mf2 files)
-  - Parses MaxSea file structure (if needed for validation)
-  - Uses shared core for queueing and upload
-- **File Detection**: Monitors MaxSea TimeZero backup/export locations
+**Architecture**: 
+- Runs on a Raspberry Pi connected by network to the Olex unit
+- Does NOT run on the Olex unit itself (Olex is a closed appliance)
+- The Pi mounts or accesses Olex export directories over the network
+
+**Responsibilities:**
+- Watches Olex export directories for new/updated files
+- Detects files containing tracks, soundings, marks, etc.
+- Classifies files by a simple file_type:
+  - `track`: navigation track data
+  - `soundings`: depth soundings
+  - `marks`: waypoints and fishing marks
+  - `unknown`: unrecognized file types
+- Enqueues files into the shared SQLite queue with vendor="olex"
+- Lets shared logic handle upload and heartbeat
+
+**File Detection**: Monitors directories where Olex exports navigation and fishing data
+
+#### `connector/maxsea_win/` - MaxSea TimeZero Connector (Windows)
+
+**Platform**: Windows (native service)
+
+**Architecture**:
+- Runs on Windows (same PC as MaxSea TimeZero, or a dedicated Windows mini-PC)
+- Does NOT require a Raspberry Pi
+
+**Responsibilities:**
+- Watches MaxSea TimeZero export/backup directories for new/updated files
+- Detects MaxSea-specific file formats such as:
+  - `.mf2` files (MaxSea TimeZero format)
+  - `.ptf` files (TimeZero project files)
+  - Other TimeZero export formats
+- Classifies files by file_type:
+  - `track`: navigation track data
+  - `marks`: waypoints and marks
+  - `backup`: TimeZero backup files
+  - `unknown`: unrecognized file types
+- Enqueues files into the shared SQLite queue with vendor="maxsea"
+- Uses the same shared upload and heartbeat logic as the Olex connector
 
 #### Future Connectors
 - `connector/navnet/` – for Furuno NavNet systems
@@ -126,69 +169,24 @@ The Dashboard operates entirely on these normalized structures and does not need
 
 ## Architecture Diagram
 
-```
-┌─────────────┐         ┌──────────────┐
-│   Olex     │         │   MaxSea     │
-│  Plotter   │         │  TimeZero    │
-└─────┬───────┘         └──────┬───────┘
-      │                        │
-      │ Export Files          │ Export Files
-      │                        │
-┌─────▼────────────────────────▼───────┐
-│  connector/olex_pi/  │ connector/   │
-│                      │ maxsea_win/  │
-│  ┌────────────────────────────────┐ │
-│  │   connector/shared/           │ │
-│  │   - queue DB                   │ │
-│  │   - HTTP client                │ │
-│  │   - heartbeat                  │ │
-│  └────────────────────────────────┘ │
-└─────┬───────────────────────────────┘
-      │
-      │ POST /api/upload_file
-      │ POST /api/heartbeat
-      │ (plotter_type: "olex" | "maxsea")
-      │
-┌─────▼───────────────────────────────┐
-│         Core API                     │
-│                                      │
-│  ┌──────────────┐  ┌──────────────┐│
-│  │ ingest_olex │  │ ingest_maxsea││
-│  └──────┬───────┘  └──────┬───────┘│
-│         │                  │        │
-│         └────────┬─────────┘        │
-│                  │                  │
-│         Normalized Data Model       │
-│         (trips, tows, soundings)    │
-└──────────────────┬──────────────────┘
-                   │
-                   │ GET /api/trips
-                   │ GET /api/tracks
-                   │ (plotter-agnostic)
-                   │
-         ┌─────────▼─────────┐
-         │    Dashboard       │
-         │  (Next.js Web App) │
-         │                    │
-         │  Works with        │
-         │  normalized data   │
-         │  from any plotter  │
-         └────────────────────┘
-```
+Olex -> Olex Pi connector -> DeckBrain Core API -> DeckBrain Dashboard
+
+MaxSea -> Windows connector -> DeckBrain Core API -> DeckBrain Dashboard
+
+Both connectors use the same Core API endpoints and upload protocol, feeding into the same normalized data model.
 
 ## Dashboard Plotter-Agnostic Design
 
-The Dashboard is designed to work with normalized data and does not need vendor-specific logic:
+The Dashboard is plotter-agnostic and operates entirely on normalized data:
 
-- **Trips View**: Displays trips from any plotter using the same normalized trip structure
-- **Tracks**: Renders track lines identically regardless of source
-- **History**: Aggregates data from multiple plotters (if a vessel switches systems)
-- **Metadata Display**: May show plotter brand as informational metadata (e.g., "source: Olex") but does not require different rendering logic
+- **Only consumes normalized entities**: trips, tows, notes, and history layers
+- **No vendor-specific logic**: Does not need to know whether data came from Olex, MaxSea, or any other plotter
+- **Metadata display**: May show the plotter brand as metadata (e.g., "source: Olex", "source: MaxSea") for informational purposes, but its rendering and business logic do not depend on vendor format
 
-This design allows:
-- Vessels to switch plotters without losing historical data
-- Fleet managers to view data from vessels using different plotter systems
-- Future plotter integrations without Dashboard changes
+This design ensures:
+- Vessels can switch plotters without losing historical data
+- Fleet managers can view data from vessels using different plotter systems in a unified interface
+- Future plotter integrations require no Dashboard changes
 
 ## Adding a New Plotter
 
