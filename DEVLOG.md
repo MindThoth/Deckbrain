@@ -38,3 +38,12 @@ Every update (by humans or AI) must be recorded.
   - Created code service folders (connector, core-api, dashboard, mobile, scripts) with short README files to mark them as code zones.
 - Notes:
   - This reorganization establishes a professional structure where all runtime code lives under service folders and all secondary docs live under docs/.
+
+### 2025-12-11 – v0.1.2-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Updated DECKBRAIN_FOUNDATION.md to clarify that DeckBrain is a multi-plotter platform, with Olex as the first supported vendor.
+  - Added docs/architecture/multi_plotter_connectors.md describing vendor-specific connectors and the shared upload protocol.
+  - Tweaked architecture docs (docs/architecture/overview.md, docs/architecture/modules.md) to avoid implying Olex-only support and to mention future MaxSea integration.
+- Notes:
+  - This documents the intention to support Olex, MaxSea, and other plotters via separate connector agents feeding a shared Core API. The Dashboard remains plotter-agnostic and works with normalized data from any supported system.

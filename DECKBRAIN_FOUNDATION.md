@@ -4,18 +4,18 @@ This document is the single source of truth for what DeckBrain is, how it works,
 
 ## 1. What is DeckBrain?
 
-DeckBrain is a modular data intelligence platform for commercial fishing vessels. It connects to an Olex navigation system via a dedicated Raspberry Pi “connector” unit, securely uploads navigation and fishing data to a cloud backend, and presents it in a map-based dashboard for captains and vessel owners. Over time, it will also provide AI-powered assistance for planning tows, avoiding bad ground, and learning from historical performance.
+DeckBrain is a modular data intelligence platform for commercial fishing vessels. It connects to multiple navigation and fishing plotter systems (Olex, MaxSea TimeZero, and others) via vendor-specific connector agents, securely uploads navigation and fishing data to a cloud backend, and presents it in a map-based dashboard for captains and vessel owners. Over time, it will also provide AI-powered assistance for planning tows, avoiding bad ground, and learning from historical performance.
 
 At a high level:
-- On the boat: Raspberry Pi Connector pulls Olex data and buffers it offline.
-- In the cloud: Core API stores and organizes data per vessel.
-- For the user: Web Dashboard (and later a mobile app) shows trips, history, notes, and AI suggestions.
+- On the boat: Vendor-specific connector agents (e.g., Olex connector on Raspberry Pi, MaxSea connector on Windows) pull plotter data and buffer it offline.
+- In the cloud: Core API stores and organizes data per vessel in a plotter-agnostic format.
+- For the user: Web Dashboard (and later a mobile app) shows trips, history, notes, and AI suggestions, regardless of which plotter system the vessel uses.
 
 ## 2. Vision and Goals
 
 DeckBrain’s long-term goal is to become the “brain of the deck” for a fishing vessel:
 
-- Never lose your Olex/ground data again (even if the machine dies or is replaced).
+- Never lose your plotter/ground data again (even if the machine dies or is replaced), regardless of which navigation system you use.
 - Turn years of tracks, depths, and notes into something searchable and visual.
 - Let captains keep old-school workflows (paper logs) while still getting a clean digital history.
 - Provide a friendly, map-focused user experience that feels natural for captains.
@@ -44,21 +44,25 @@ Future users:
 
 DeckBrain has three main components (with a future fourth):
 
-1. **Connector (Raspberry Pi)**  
-   - Python service running on a Raspberry Pi on the vessel.  
-   - Watches a data directory where Olex exports its files.  
-   - Queues new/changed files in a local SQLite database.  
-   - Uploads queued files to the core API when internet is available.  
-   - Sends periodic heartbeats with status (queue size, last sync, version).  
-   - Checks with the cloud for software update info.
+1. **Connectors (Vendor-Specific Agents)**  
+   - Each plotter vendor has its own connector implementation:
+     - **Olex Connector**: Python service running on Raspberry Pi, watches Olex export directories.
+     - **MaxSea Connector**: Python/Windows service, watches MaxSea TimeZero export/backup directories.
+     - Future connectors for NavNet, WASSP, and other systems.
+   - All connectors share common core functionality:
+     - Queue new/changed files in a local SQLite database.
+     - Upload queued files to the Core API when internet is available.
+     - Send periodic heartbeats with status (queue size, last sync, version, plotter_type).
+     - Check with the cloud for software update info.
+   - Vendor-specific adapters handle plotter-specific file formats and directory structures.
 
 2. **Core API (FastAPI backend)**  
-   - Receives file uploads from each vessel (device_id + api_key).  
-   - Stores raw files on disk under `storage/<device_id>/...`.  
+   - Receives file uploads from each vessel (device_id + api_key + plotter_type).  
+   - Stores raw files on disk under `storage/<device_id>/...` with source_format metadata.  
    - Tracks:
-     - Devices (which boats exist, their API keys, and metadata)
-     - File records
-     - Heartbeats (status over time)
+     - Devices (which boats exist, their API keys, plotter_type, and metadata)
+     - File records (with source_format indicating vendor format)
+     - Heartbeats (status over time, including plotter_type)
      - Tow notes (typed notes and uploaded images of log pages)  
    - Provides JSON endpoints for:
      - file upload
@@ -67,16 +71,19 @@ DeckBrain has three main components (with a future fourth):
      - historic layers (marks, hot zones, risk zones)
      - tow notes
      - update checks
-   - Designed to support many boats safely and separately.
+   - Designed to support many boats safely and separately, regardless of plotter vendor.
+   - Uses vendor-specific ingestion modules to parse raw files into normalized DeckBrain data structures (trips, tows, soundings, marks).
 
 3. **Dashboard (Next.js web app)**  
    - The main interface for captains and owners.  
+   - Plotter-agnostic: works with data from any supported plotter system.
    - Map-centric, with tabs such as:
      - Trips – replay individual trips and tows, including track lines and depth profile.
      - Live – last sync time, last known position, queue size on the connector.
      - History – long-term ground coverage, productive zones, marks, and “avoid here” zones.
      - AI Assist – (future) area for AI-driven recommendations and warnings.
      - Settings – boat info, device details, data export options, access control.
+   - May display plotter brand as metadata (e.g., "source: Olex" or "source: MaxSea") but operates on normalized data structures.
    - Provides an intuitive user experience with marine charts and overlays.
 
 4. **Future: Mobile App (iOS / others)**  
@@ -88,25 +95,27 @@ DeckBrain has three main components (with a future fourth):
 
 ## 5. Data Flow (End-to-End)
 
-Basic flow:
-1. **Olex** exports navigation/fishing data to a file directory.
-2. **Connector (Pi)**:
-   - Watches that directory.
+Basic flow (works identically for all plotter vendors):
+1. **Plotter System** (Olex, MaxSea, etc.) exports navigation/fishing data to a file directory.
+2. **Vendor-Specific Connector**:
+   - Watches the plotter-specific export directory.
    - Detects new or modified files.
    - Stores them in a local queue (SQLite) with status = pending.
 3. When internet is available:
-   - Connector sends pending files to the Core API (`/api/upload_file`).
+   - Connector sends pending files to the Core API (`/api/upload_file`) with plotter_type metadata.
    - On successful response, marks them as uploaded in its local DB.
 4. Connector also sends **heartbeats** (`/api/heartbeat`) indicating:
    - queue size
    - local version (from version.json)
+   - plotter_type
    - last sync status (ok/error)
 5. **Core API**:
    - Validates device auth (device_id, api_key).
-   - Saves uploaded files under `storage/<device_id>/...`.
-   - Records FileRecord and Heartbeat entries in the DB.
+   - Saves uploaded files under `storage/<device_id>/...` with source_format metadata.
+   - Records FileRecord and Heartbeat entries in the DB (including plotter_type).
+   - Routes files to vendor-specific ingestion modules (e.g., `ingest_olex`, `ingest_maxsea`) that parse raw formats into normalized DeckBrain objects.
    - Exposes derived data as:
-     - trips for a device
+     - trips for a device (normalized across all plotters)
      - track data per trip
      - historical coverage
      - tow notes for a given tow/trip.
@@ -116,7 +125,7 @@ Basic flow:
      - fetch track and depth data
      - fetch history layers
      - fetch tow notes
-   - Renders the information on a marine-style map with side panels.
+   - Renders the information on a marine-style map with side panels, regardless of source plotter.
 
 Future data flow additions:
 - AI pipeline that consumes trips, notes, and history to generate “suggested areas” and warnings.
@@ -124,26 +133,36 @@ Future data flow additions:
 
 ## 6. Component Responsibilities (More Detail)
 
-### 6.1 Connector (Raspberry Pi)
+### 6.1 Connectors (Vendor-Specific Agents)
 
-Main responsibilities:
+Main responsibilities (shared across all connector implementations):
 - Offline-first handling: always safe to run with no internet.
 - Reliable queueing of files to avoid data loss.
 - Efficient uploads when connectivity is available.
-- Sending heartbeats regularly.
+- Sending heartbeats regularly (including plotter_type).
 - Checking for updates (and eventually downloading/applying them).
+
+Vendor-specific responsibilities:
+- Olex connector: watches Olex export directories on Raspberry Pi/Linux.
+- MaxSea connector: watches MaxSea TimeZero export/backup directories on Windows.
+- Future connectors: adapt to their respective plotter file formats and directory structures.
 
 Key behaviors:
 - If no network: do not crash, just keep queueing.
 - If server is unreachable: retry later (backoff).
-- Must never delete raw Olex data without explicit design.
+- Must never delete raw plotter data without explicit design.
+- All connectors use the same upload protocol and data model when talking to Core API.
 
 ### 6.2 Core API (FastAPI)
 
 Main responsibilities:
-- Device authentication and authorization.
-- File ingestion and storage.
-- Building higher-level concepts:
+- Device authentication and authorization (plotter-agnostic).
+- File ingestion and storage (with source_format tracking).
+- Vendor-specific ingestion modules that parse raw plotter files into normalized DeckBrain structures:
+  - `ingest_olex`: interprets Olex file formats
+  - `ingest_maxsea`: interprets MaxSea TimeZero formats
+  - Future: `ingest_navnet`, `ingest_wassp`, etc.
+- Building higher-level concepts (normalized across all plotters):
   - trips (grouping track segments)
   - tows (subsections of a trip)
 - Managing tow notes (both text and images).
@@ -151,7 +170,7 @@ Main responsibilities:
   - Trips view
   - History view
   - Live status view
-- Providing stable, versionable JSON contracts for clients (dashboard, mobile).
+- Providing stable, versionable JSON contracts for clients (dashboard, mobile), independent of source plotter.
 
 ### 6.3 Dashboard (Next.js)
 
@@ -179,23 +198,31 @@ Main responsibilities:
 
 To keep DeckBrain maintainable, each part of the system uses a core + modules layout.
 
-### 7.1 Connector
+### 7.1 Connectors
 
-- `connector/core/`
-  - config (device_id, api_key, base URL, data directory)
+**Shared Core** (`connector/shared/`):
+  - config (device_id, api_key, base URL, plotter_type)
   - queue DB helper
   - HTTP client
   - logging helpers
   - version reader (version.json)
-- `connector/modules/`
-  - `file_sync/`
-    - watches data directory
-    - enqueues new/changed files
-    - calls HTTP client to upload pending items
-  - `heartbeat/`
-    - sends heartbeats with queue size, version, last_sync_ok
-  - `updates/`
-    - checks `/api/check_update` to see if a new connector version is available
+  - common upload protocol implementation
+
+**Vendor-Specific Adapters**:
+- `connector/olex_pi/`
+  - watches Olex export directories (Linux/Pi)
+  - vendor-specific file detection and parsing
+  - uses shared core for queueing and upload
+- `connector/maxsea_win/`
+  - watches MaxSea TimeZero export/backup directories (Windows)
+  - vendor-specific file detection and parsing
+  - uses shared core for queueing and upload
+- Future: `connector/navnet/`, `connector/wassp/`, etc.
+
+**Shared Modules** (`connector/shared/modules/`):
+  - `file_sync/` – generic file watching and queueing (used by all adapters)
+  - `heartbeat/` – sends heartbeats with queue size, version, plotter_type, last_sync_ok
+  - `updates/` – checks `/api/check_update` to see if a new connector version is available
   - future modules: `sensors/`, etc.
 
 ### 7.2 Core API
@@ -206,9 +233,12 @@ To keep DeckBrain maintainable, each part of the system uses a core + modules la
   - security helpers (verify device_id + api_key)
   - common utilities (timestamps, path builders)
 - `core-api/modules/`
-  - `devices/` – device registration, API key management, summary endpoints
-  - `sync/` – upload and heartbeat handling
-  - `trips/` – trips and track APIs
+  - `devices/` – device registration, API key management, plotter_type tracking, summary endpoints
+  - `sync/` – upload and heartbeat handling (plotter-agnostic)
+  - `ingest_olex/` – parses Olex files into normalized trips/tows/soundings
+  - `ingest_maxsea/` – parses MaxSea files into normalized trips/tows/soundings
+  - Future: `ingest_navnet/`, `ingest_wassp/`, etc.
+  - `trips/` – trips and track APIs (normalized data, plotter-agnostic)
   - `history/` – long-term coverage and marks
   - `tow_notes/` – text notes + log image uploads
   - `updates/` – version and update checks
@@ -343,9 +373,23 @@ Any AI model (Copilot, Cursor, Claude, ChatGPT, etc.) that edits this repo shoul
 
 This keeps DeckBrain clean, understandable, and safe to evolve.
 
-## 13. Where to Find More Docs
+## 13. Multi-Plotter Support
 
-- Architecture details: `docs/architecture/overview.md`, `docs/architecture/modules.md`
+DeckBrain is designed from the ground up to support multiple navigation and fishing plotter systems. Olex is the first supported vendor, but the architecture accommodates MaxSea TimeZero, NavNet, WASSP, and other systems.
+
+**Key Design Principles:**
+- Each plotter vendor has its own connector agent (e.g., `connector/olex_pi`, `connector/maxsea_win`).
+- All connectors share a common core (`connector/shared/`) for queueing, HTTP, heartbeats, and updates.
+- Vendor-specific adapters handle plotter-specific file formats and directory structures.
+- The Core API stores data in a normalized format (trips, tows, notes, file_records) with metadata fields (`plotter_type`, `source_format`) indicating the source system.
+- Vendor-specific ingestion modules (`core-api/modules/ingest_olex`, `ingest_maxsea`, etc.) convert raw files into normalized DeckBrain objects.
+- The Dashboard is plotter-agnostic and works with normalized data from any supported plotter.
+
+For detailed information on the connector architecture and how different plotters integrate, see `docs/architecture/multi_plotter_connectors.md`.
+
+## 14. Where to Find More Docs
+
+- Architecture details: `docs/architecture/overview.md`, `docs/architecture/modules.md`, `docs/architecture/multi_plotter_connectors.md`
 - Development practices: `docs/development/environment_setup.md`, `docs/development/testing_strategy.md`
 - Product roadmap: `docs/product/feature_roadmap.md`
 
