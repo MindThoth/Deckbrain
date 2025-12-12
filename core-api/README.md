@@ -101,12 +101,45 @@ The Core API uses FastAPI with Uvicorn for local development.
 - `GET /api/devices` - List devices (placeholder)
 - `GET /api/devices/{device_id}` - Get device details (placeholder)
 
+### Database (Local Dev)
+
+The Core API uses **SQLite** by default for local development (no separate database server required).
+
+**Database Location:** `core-api/dev.db` (created automatically on first run)
+
+**Switching to PostgreSQL:**
+1. Install PostgreSQL
+2. Create a database: `createdb deckbrain`
+3. Set `DATABASE_URL` environment variable:
+   ```bash
+   export DATABASE_URL="postgresql://user:password@localhost:5432/deckbrain"
+   ```
+
+### Migrations (Alembic)
+
+Database migrations are managed with Alembic.
+
+**Apply migrations:**
+```bash
+cd core-api
+alembic upgrade head
+```
+
+**Create a new migration (after model changes):**
+```bash
+alembic revision --autogenerate -m "description of changes"
+```
+
+**Rollback last migration:**
+```bash
+alembic downgrade -1
+```
+
 ### TODO
 
-- Document database setup (SQLite for dev, PostgreSQL for production)
 - Document environment variables and configuration (.env file)
 - Add instructions for running tests once tests are added
-- Add database migration instructions (Alembic)
+- Add seed data script for local development
 
 ## Logging & Versioning
 

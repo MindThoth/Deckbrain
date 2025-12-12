@@ -1,0 +1,34 @@
+# DeckBrain Core API - Python dependencies
+#
+# Install with: pip install -r requirements.txt
+#
+# TODO: Consider migrating to pyproject.toml and poetry for better dependency management
+
+# FastAPI framework
+fastapi==0.104.1
+
+# ASGI server for running FastAPI
+uvicorn[standard]==0.24.0
+
+# Pydantic for data validation and settings management
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database ORM and migrations
+sqlalchemy==2.0.23
+alembic==1.13.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# TODO: Add when implementing authentication
+# python-jose[cryptography]==3.3.0
+# passlib[bcrypt]==1.7.4
+# python-multipart==0.0.6
+
+# TODO: Add when implementing file upload
+# aiofiles==23.2.1
+
+# TODO: Add for production deployment
+# gunicorn==21.2.0
+

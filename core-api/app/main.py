@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from modules.health import router as health_router
 from modules.devices import router as devices_router
+from modules.heartbeat import router as heartbeat_router
 
 # Create FastAPI application
 app = FastAPI(
@@ -44,9 +45,10 @@ async def root():
 # Include routers
 app.include_router(health_router.router, tags=["health"])
 app.include_router(devices_router.router, prefix="/api", tags=["devices"])
+app.include_router(heartbeat_router.router, prefix="/api", tags=["heartbeat"])
 
 # TODO: Add additional routers as modules are implemented:
-# - sync (file upload, heartbeat)
+# - sync (file upload)
 # - trips
 # - history
 # - tow_notes

@@ -84,3 +84,17 @@ Every update (by humans or AI) must be recorded.
   - This marks the start of v0.2.0-dev (Trips vertical slice) by first establishing a runnable Core API shell.
   - The app is now runnable with: cd core-api && uvicorn app.main:app --reload
   - Placeholder endpoints return mock data; database integration is next.
+
+### 2025-12-12 – v0.2.1-dev – branch: main
+- Model: Cursor (with Claude Sonnet 4.5)
+- Changes:
+  - Added SQLAlchemy + Alembic database layer to core-api, using SQLite by default for local development.
+  - Implemented initial models: Device, Heartbeat, FileRecord with proper relationships and indexes.
+  - Added first Alembic migration (001) to create core tables: devices, heartbeats, file_records.
+  - Implemented DB-backed endpoints: GET /api/devices, GET /api/devices/{device_id}, POST /api/heartbeat.
+  - Updated core-api/README.md with database setup and Alembic migration instructions.
+  - Updated docs/api_spec.md and docs/db_schema.md to match the implementation.
+- Notes:
+  - Authentication enforcement is intentionally deferred; current goal is to validate end-to-end ingestion and persistence.
+  - Database migrations can be applied with: cd core-api && alembic upgrade head
+  - PostgreSQL support is ready via DATABASE_URL environment variable.

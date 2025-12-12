@@ -9,17 +9,17 @@ This document describes the Core API database schema for DeckBrain. The schema i
 Stores information about each vessel/device that connects to DeckBrain.
 
 **Fields:**
-- `id` (primary key)
-- `device_id` (string, unique): Unique identifier for the vessel/device
-- `api_key` (string, hashed): Authentication key for the connector
-- `plotter_type` (string or enum): Identifies the primary navigation/fishing system this device is attached to
+- `id` (integer primary key)
+- `device_id` (string, unique, indexed): Unique identifier for the vessel/device
+- `name` (string, nullable): Human-readable vessel name or label
+- `plotter_type` (string, not null): Identifies the primary navigation/fishing system this device is attached to
   - Examples: `"olex"`, `"maxsea"`, `"other"`
   - Used by Core API to route files to appropriate ingestion modules
   - Displayed in Dashboard as metadata (e.g., "source: Olex")
-- `vessel_name` (string, optional): Human-readable vessel name
-- `created_at` (timestamp)
-- `updated_at` (timestamp)
-- `last_heartbeat_at` (timestamp, nullable): Last time a heartbeat was received
+- `api_key_hash` (string, nullable): Hashed authentication key for the connector
+- `created_at` (timestamp with timezone)
+- `updated_at` (timestamp with timezone)
+- `last_seen_at` (timestamp with timezone, nullable): Updated on each heartbeat
 - Additional metadata fields as needed
 
 **Notes:**
@@ -32,21 +32,21 @@ Stores information about each vessel/device that connects to DeckBrain.
 Tracks all files uploaded from connectors.
 
 **Fields:**
-- `id` (primary key)
-- `device_id` (foreign key to devices)
-- `file_path` (string): Path where the file is stored on disk (under `storage/<device_id>/...`)
-- `source_format` (string): Indicates the original file format for parsing
+- `id` (integer primary key)
+- `device_id` (foreign key to devices.id, indexed)
+- `file_type` (string, not null): Logical type of the file content
+  - Examples: `"track"`, `"soundings"`, `"marks"`, `"backup"`, `"unknown"`
+  - Helps categorize files before parsing
+- `source_format` (string, not null): Indicates the original file format for parsing
   - Examples: `"olex_raw"`, `"maxsea_mf2"`, `"tz_backup"`, `"unknown"`
   - Used by Core API to select the correct ingestion module
   - Olex Pi connector typically sets `source_format="olex_raw"`
   - MaxSea connector uses values like `"maxsea_mf2"` or `"tz_backup"` depending on file type
-- `file_type` (string): Logical type of the file content
-  - Examples: `"track"`, `"soundings"`, `"marks"`, `"backup"`, `"unknown"`
-  - Helps categorize files before parsing
-- `uploaded_at` (timestamp): When the file was uploaded
-- `processed_at` (timestamp, nullable): When the file was successfully parsed by an ingestion module
-- `status` (string): `"pending"`, `"processing"`, `"processed"`, `"error"`
-- `error_message` (text, nullable): Error details if processing failed
+- `local_path` (string, nullable): Path where the file is stored on disk
+- `remote_path` (string, nullable): Object storage path (future, when S3/GCS is implemented)
+- `size_bytes` (integer, nullable): File size in bytes
+- `processing_status` (string, not null, default "pending"): `"pending"`, `"processed"`, `"failed"`
+- `uploaded_at` (timestamp with timezone)
 - Additional metadata as needed
 
 **Notes:**
@@ -59,13 +59,12 @@ Tracks all files uploaded from connectors.
 Records periodic status updates from connectors.
 
 **Fields:**
-- `id` (primary key)
-- `device_id` (foreign key to devices)
-- `plotter_type` (string): Vendor identifier (matches devices.plotter_type)
-- `queue_size` (integer): Number of pending files in connector's local queue
-- `connector_version` (string): Version of the connector software
-- `last_sync_ok` (boolean): Whether the last upload attempt succeeded
-- `received_at` (timestamp): When the heartbeat was received
+- `id` (integer primary key)
+- `device_id` (foreign key to devices.id, indexed)
+- `queue_size` (integer, nullable): Number of pending files in connector's local queue
+- `last_upload_ok` (boolean, nullable): Whether the last upload attempt succeeded
+- `connector_version` (string, nullable): Version of the connector software
+- `received_at` (timestamp with timezone)
 - Additional status fields as needed
 
 **Notes:**

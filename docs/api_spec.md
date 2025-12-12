@@ -90,6 +90,39 @@ Get details for a specific device (placeholder).
 - Currently returns placeholder data
 - Future: Will query devices table and return 404 if not found
 
+### POST `/api/heartbeat`
+
+Receive periodic status updates from connectors.
+
+**Headers:**
+- `X-Device-ID` (required): Unique device identifier
+- `X-Plotter-Type` (optional): Plotter type (olex, maxsea, etc.)
+- `X-API-Key` (optional, not enforced yet): API key for authentication
+
+**Body:**
+```json
+{
+  "queue_size": 5,
+  "last_upload_ok": true,
+  "connector_version": "0.1.0"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "device_id": "device123",
+  "received_at": "2025-12-12T10:30:00Z"
+}
+```
+
+**Notes:**
+- Creates device if it doesn't exist (using X-Plotter-Type or defaults to "other")
+- Updates device.last_seen_at timestamp
+- Stores heartbeat record in database
+- API key validation not yet enforced
+
 ### POST `/api/upload_file`
 
 Uploads a raw plotter file to the Core API.
