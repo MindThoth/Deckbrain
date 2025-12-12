@@ -72,3 +72,15 @@ Every update (by humans or AI) must be recorded.
   - Updated PROJECT_GUIDE.md to reference the new guideline.
 - Notes:
   - This document formalizes how contributors and AI tools should structure commits, DEVLOG entries, and CHANGELOG updates.
+
+### 2025-12-12 – v0.2.0-dev – branch: main
+- Model: Cursor (with Claude Sonnet 4.5)
+- Changes:
+  - Created initial FastAPI skeleton for core-api with app/main.py, core/config.py, core/db.py, and basic modules for health and devices.
+  - Added minimal requirements.txt with FastAPI, Uvicorn, and Pydantic dependencies.
+  - Updated core-api/README.md with runnable dev server instructions.
+  - Documented /health and placeholder /api/devices endpoints in docs/api_spec.md.
+- Notes:
+  - This marks the start of v0.2.0-dev (Trips vertical slice) by first establishing a runnable Core API shell.
+  - The app is now runnable with: cd core-api && uvicorn app.main:app --reload
+  - Placeholder endpoints return mock data; database integration is next.

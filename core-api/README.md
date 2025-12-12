@@ -62,17 +62,51 @@ core-api/
 - **Database Schema**: For database tables and relationships, see `docs/db_schema.md`
 - **Multi-Plotter Architecture**: For connector details (Olex Pi, MaxSea Windows), see `docs/architecture/multi_plotter_connectors.md`
 
-## Local Development (WIP)
+## Local Development
 
-This section will be expanded once the initial FastAPI app is scaffolded.
+The Core API uses FastAPI with Uvicorn for local development.
 
-**TODO:**
-- Define Python version and dependency management (e.g., virtualenv/poetry)
-- Add instructions to install dependencies (requirements.txt or pyproject.toml)
-- Add a dev command for running the FastAPI server (e.g., `uvicorn core_api.main:app --reload`)
+### Prerequisites
+
+- Python 3.10+ recommended
+- Virtual environment tool (venv, virtualenv, or poetry)
+
+### Running the Dev Server
+
+1. **Create and activate a virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   cd core-api
+   pip install -r requirements.txt
+   ```
+
+3. **Run the development server:**
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+   The API will be available at `http://localhost:8000`
+   - API documentation (Swagger UI): `http://localhost:8000/docs`
+   - Alternative documentation (ReDoc): `http://localhost:8000/redoc`
+
+### Current Endpoints
+
+- `GET /` - Root endpoint with service info
+- `GET /health` - Health check endpoint
+- `GET /api/devices` - List devices (placeholder)
+- `GET /api/devices/{device_id}` - Get device details (placeholder)
+
+### TODO
+
 - Document database setup (SQLite for dev, PostgreSQL for production)
-- Document how to run tests once tests are added
-- Document environment variables and configuration
+- Document environment variables and configuration (.env file)
+- Add instructions for running tests once tests are added
+- Add database migration instructions (Alembic)
 
 ## Logging & Versioning
 

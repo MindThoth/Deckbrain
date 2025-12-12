@@ -24,6 +24,72 @@ The server uses device configuration (including `plotter_type` from the `devices
 
 ## Endpoints
 
+### GET `/health`
+
+Basic service health check endpoint.
+
+**Headers:** None required
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "service": "core-api",
+  "version": "0.2.0-dev"
+}
+```
+
+**Notes:**
+- Used by monitoring systems and load balancers
+- Does not require authentication
+- Future: Will include database and storage connectivity checks
+
+### GET `/api/devices`
+
+Lists all registered devices (placeholder).
+
+**Headers:**
+- TODO: Will require authentication in future
+
+**Query Parameters:** None (future: pagination, filtering)
+
+**Response:**
+```json
+{
+  "devices": [],
+  "total": 0
+}
+```
+
+**Notes:**
+- Currently returns empty list (placeholder)
+- Future: Will query devices table and return real device data
+- Future: Add pagination, filtering by plotter_type, status
+
+### GET `/api/devices/{device_id}`
+
+Get details for a specific device (placeholder).
+
+**Headers:**
+- TODO: Will require authentication in future
+
+**Path Parameters:**
+- `device_id` (string): Unique device identifier
+
+**Response:**
+```json
+{
+  "device_id": "device123",
+  "vessel_name": "Placeholder Vessel",
+  "plotter_type": "olex",
+  "last_heartbeat_at": null
+}
+```
+
+**Notes:**
+- Currently returns placeholder data
+- Future: Will query devices table and return 404 if not found
+
 ### POST `/api/upload_file`
 
 Uploads a raw plotter file to the Core API.
