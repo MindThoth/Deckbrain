@@ -28,6 +28,8 @@ This guide explains how to work inside the DeckBrain repository. Read it before 
 
 DeckBrain uses a simple but strict structure for branches and logs so that humans and AI models can collaborate without making a mess.
 
+For detailed commit and logging guidelines, see `docs/engineering/commit_and_log_guidelines.md`.
+
 ### Branches
 
 - main

@@ -64,3 +64,11 @@ Every update (by humans or AI) must be recorded.
   - Expanded core-api/README.md into a full service README describing responsibilities, structure, and links to API/schema docs.
 - Notes:
   - This makes the Core API easier to understand in isolation and clarifies where to find API and database documentation.
+
+### 2025-12-11 – v0.1.5-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Added commit/logging/branching guidelines under docs/engineering/commit_and_log_guidelines.md.
+  - Updated PROJECT_GUIDE.md to reference the new guideline.
+- Notes:
+  - This document formalizes how contributors and AI tools should structure commits, DEVLOG entries, and CHANGELOG updates.
