@@ -57,3 +57,10 @@ Every update (by humans or AI) must be recorded.
   - Created connector/shared, connector/olex_pi, and connector/maxsea_win directories with README files to mark their roles.
 - Notes:
   - This establishes Option A: one shared connector core with vendor-specific connectors for Olex and MaxSea, all using the same Core API protocol.
+
+### 2025-12-11 – v0.1.4-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Expanded core-api/README.md into a full service README describing responsibilities, structure, and links to API/schema docs.
+- Notes:
+  - This makes the Core API easier to understand in isolation and clarifies where to find API and database documentation.
