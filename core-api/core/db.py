@@ -59,3 +59,24 @@ def init_db():
     
     Base.metadata.create_all(bind=engine)
 
+
+def check_db_initialized() -> None:
+    """
+    Check if database tables exist.
+    
+    Raises RuntimeError if the 'devices' table is missing,
+    indicating migrations have not been applied.
+    
+    This is called at application startup to fail fast with a clear error.
+    """
+    from sqlalchemy import inspect, text
+    
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    
+    if "devices" not in tables:
+        raise RuntimeError(
+            "Database not initialized. Required tables are missing.\n"
+            "Please run migrations: alembic upgrade head"
+        )
+

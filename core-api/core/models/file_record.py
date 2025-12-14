@@ -31,15 +31,17 @@ class FileRecord(Base):
     source_format = Column(String, nullable=False)  # olex_raw|maxsea_mf2|tz_backup|unknown
     
     # File storage
-    local_path = Column(String, nullable=True)  # path on disk
-    remote_path = Column(String, nullable=True)  # object storage path (future)
+    local_path = Column(String, nullable=True)  # path on connector's disk
+    remote_path = Column(String, nullable=True)  # path in Core API storage
     size_bytes = Column(Integer, nullable=True)  # file size
+    sha256 = Column(String, nullable=True, index=True)  # file hash for deduplication
     
     # Processing status
-    processing_status = Column(String, nullable=False, default="pending")  # pending|processed|failed
+    processing_status = Column(String, nullable=False, default="pending")  # pending|stored|processed|failed
     
     # Timestamps
-    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    received_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)  # when file was received
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)  # legacy, same as received_at
     
     # Relationship
     device = relationship("Device", back_populates="file_records")

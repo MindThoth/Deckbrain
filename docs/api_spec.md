@@ -92,12 +92,12 @@ Get details for a specific device (placeholder).
 
 ### POST `/api/heartbeat`
 
-Receive periodic status updates from connectors.
+Receive periodic status updates from connectors. **Authentication required.**
 
 **Headers:**
 - `X-Device-ID` (required): Unique device identifier
-- `X-Plotter-Type` (optional): Plotter type (olex, maxsea, etc.)
-- `X-API-Key` (optional, not enforced yet): API key for authentication
+- `X-API-Key` (required): API key for authentication
+- `X-Plotter-Type` (optional): Plotter type (olex, maxsea, etc.) - only used for auto-registration in dev mode
 
 **Body:**
 ```json
@@ -108,7 +108,7 @@ Receive periodic status updates from connectors.
 }
 ```
 
-**Response:**
+**Success Response:**
 ```json
 {
   "status": "ok",
@@ -117,49 +117,83 @@ Receive periodic status updates from connectors.
 }
 ```
 
+**Error Responses:**
+```json
+{
+  "detail": "Missing required header: X-Device-ID"
+}
+```
+```json
+{
+  "detail": "Invalid API key for device"
+}
+```
+
 **Notes:**
-- Creates device if it doesn't exist (using X-Plotter-Type or defaults to "other")
-- Updates device.last_seen_at timestamp
-- Stores heartbeat record in database
-- API key validation not yet enforced
+- **Authentication is now enforced**: Device must be registered with a valid API key
+- In development mode, device is auto-created on first request
+- In production mode, devices must be pre-registered
+- Updates device.last_seen_at timestamp on every heartbeat
+- Stores heartbeat record in database for monitoring
 
 ### POST `/api/upload_file`
 
-Uploads a raw plotter file to the Core API.
+Uploads a raw plotter file to the Core API. **Authentication required.**
+
+This is a vendor-agnostic endpoint used by all connector types (Olex, MaxSea, etc.). The server determines the plotter type from the authenticated device.
 
 **Headers:**
-- `X-Device-ID`: Device identifier
-- `X-API-Key`: Authentication key
+- `X-Device-ID` (required): Unique device identifier
+- `X-API-Key` (required): API key for authentication
+- `X-Plotter-Type` (optional): Only used for auto-registration in development mode
 - `Content-Type`: `multipart/form-data`
 
 **Body (multipart/form-data):**
-- `file`: The file to upload (binary)
-- `file_type` (string, optional): Logical type of file content
+- `file` (required): The file to upload (binary)
+- `file_type` (string, optional, default "unknown"): Logical type of file content
   - Examples: `"track"`, `"marks"`, `"soundings"`, `"backup"`, `"unknown"`
   - Helps with initial categorization
-  - The Core API primarily uses `device.plotter_type` and `file_records.source_format` for routing, not this field
+- `source_format` (string, optional, default "unknown"): File format hint
+  - Examples: `"olex_raw"`, `"maxsea_mf2"`, `"tz_backup"`, `"unknown"`
+  - Used by ingestion modules to parse files correctly
+- `local_path` (string, optional): Path on connector's disk (for reference)
+- `captured_at` (ISO datetime string, optional): When file was created/captured
 
-**Response:**
+**Success Response:**
 ```json
 {
-  "success": true,
-  "file_id": "uuid",
-  "message": "File uploaded successfully"
+  "status": "ok",
+  "file_record_id": 123,
+  "remote_path": "devices/vessel-123/raw/2025/12/13/abc123__tracks.dat",
+  "size_bytes": 45678,
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "processing_status": "stored"
 }
 ```
 
-**Error Response:**
+**Error Responses:**
 ```json
 {
-  "success": false,
-  "error": "Error message"
+  "detail": "Missing required header: X-Device-ID"
+}
+```
+```json
+{
+  "detail": "Invalid API key for device"
+}
+```
+```json
+{
+  "detail": "No file provided"
 }
 ```
 
 **Notes:**
+- **Authentication is enforced**: Device must be registered (or in dev mode, auto-registered on first request)
 - The Core API determines the vendor from `device.plotter_type` (not from request body)
-- Files are stored under `storage/<device_id>/...`
-- A `file_records` entry is created with `source_format` determined by the ingestion module based on `plotter_type` and file content
+- Files are stored under `storage/devices/<device_id>/raw/<yyyy>/<mm>/<dd>/<uuid>__<filename>`
+- A `file_records` entry is created with sha256 hash for deduplication
+- Processing status is initially "stored", then changed to "processed" or "failed" by ingestion modules
 - This endpoint is used identically by Olex Pi, MaxSea Windows, and any future connectors
 
 ### POST `/api/heartbeat`

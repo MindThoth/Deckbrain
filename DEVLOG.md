@@ -86,7 +86,7 @@ Every update (by humans or AI) must be recorded.
   - Placeholder endpoints return mock data; database integration is next.
 
 ### 2025-12-12 – v0.2.1-dev – branch: main
-- Model: Cursor (with Claude Sonnet 4.5)
+- Model: Cursor (with GPT-based assistant)
 - Changes:
   - Added SQLAlchemy + Alembic database layer to core-api, using SQLite by default for local development.
   - Implemented initial models: Device, Heartbeat, FileRecord with proper relationships and indexes.
@@ -98,3 +98,31 @@ Every update (by humans or AI) must be recorded.
   - Authentication enforcement is intentionally deferred; current goal is to validate end-to-end ingestion and persistence.
   - Database migrations can be applied with: cd core-api && alembic upgrade head
   - PostgreSQL support is ready via DATABASE_URL environment variable.
+
+### 2025-12-13 – v0.2.2-dev – branch: main
+- Model: Cursor (with GPT-based assistant)
+- Changes:
+  - Added database initialization sanity checks to fail fast when migrations are missing.
+  - Added startup event in app/main.py that verifies 'devices' table exists before server starts.
+  - Improved heartbeat endpoint error handling to catch missing table errors and return developer-friendly messages.
+  - Clarified first-time setup steps in core-api README with explicit migration requirement.
+- Notes:
+  - Prevents confusing 500 errors caused by uninitialized SQLite databases.
+  - Server now fails immediately on startup with clear error message if migrations haven't been applied.
+
+### 2025-12-13 – v0.2.3-dev – branch: main
+- Model: Cursor (with Sonnet 4.5)
+- Changes:
+  - Enforced device API key authentication for all connector endpoints (heartbeat, upload_file).
+  - Added core/auth.py with bcrypt-based API key hashing and authentication dependency.
+  - Implemented vendor-agnostic POST /api/upload_file endpoint for raw file uploads.
+  - Files stored locally with deterministic path structure: storage/devices/<device_id>/raw/<yyyy>/<mm>/<dd>/<uuid>__<filename>.
+  - Added sha256 hashing and file_records tracking with received_at timestamp.
+  - Created Alembic migration (002) for sha256 and received_at fields in file_records.
+  - Updated API spec and README with authentication requirements and storage configuration.
+  - Added passlib[bcrypt] and python-multipart dependencies.
+- Notes:
+  - Raw ingestion only; no plotter-specific parsing yet.
+  - In dev mode, devices auto-register on first request with provided API key.
+  - In production mode, devices must be pre-registered.
+  - Unlocks safe connector development with proper authentication.

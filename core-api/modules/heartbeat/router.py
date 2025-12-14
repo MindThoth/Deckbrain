@@ -4,16 +4,20 @@ DeckBrain Core API - Heartbeat endpoints.
 Handles periodic status updates from connectors.
 """
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+import logging
 
 from core.db import get_db
 from core.models import Device, Heartbeat
+from core.auth import get_authenticated_device
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -34,59 +38,58 @@ class HeartbeatResponse(BaseModel):
 @router.post("/heartbeat", response_model=HeartbeatResponse)
 def receive_heartbeat(
     request: HeartbeatRequest,
-    x_device_id: str = Header(..., alias="X-Device-ID"),
-    x_plotter_type: Optional[str] = Header(None, alias="X-Plotter-Type"),
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    device: Device = Depends(get_authenticated_device),
     db: Session = Depends(get_db)
 ):
     """
     Receive heartbeat from connector.
     
-    Creates or updates device record and stores heartbeat data.
+    Stores heartbeat data for an authenticated device.
     
     Headers:
     - X-Device-ID: Required. Unique device identifier.
-    - X-Plotter-Type: Optional. Plotter type (olex, maxsea, etc.)
-    - X-API-Key: Optional. API key for authentication (not enforced yet).
+    - X-API-Key: Required. API key for authentication.
+    - X-Plotter-Type: Optional. Plotter type (olex, maxsea, etc.) - only used for auto-registration in dev mode.
     
     TODO:
-    - Implement API key validation
     - Add rate limiting
     - Add more detailed response with sync recommendations
+    - Hide database initialization errors in production (return generic 500)
     """
-    # Find or create device
-    device = db.query(Device).filter(Device.device_id == x_device_id).first()
-    
-    if not device:
-        # Create new device if not exists
-        plotter_type = x_plotter_type if x_plotter_type else "other"
-        device = Device(
-            device_id=x_device_id,
-            plotter_type=plotter_type,
-            last_seen_at=datetime.utcnow()
+    try:
+        # Device is already authenticated by dependency
+        # last_seen_at is already updated by auth dependency
+        
+        # Create heartbeat record
+        heartbeat = Heartbeat(
+            device_id=device.id,
+            queue_size=request.queue_size,
+            last_upload_ok=request.last_upload_ok,
+            connector_version=request.connector_version,
         )
-        db.add(device)
-        db.flush()  # Get device.id before creating heartbeat
-    else:
-        # Update last_seen_at
-        device.last_seen_at = datetime.utcnow()
-    
-    # Create heartbeat record
-    heartbeat = Heartbeat(
-        device_id=device.id,
-        queue_size=request.queue_size,
-        last_upload_ok=request.last_upload_ok,
-        connector_version=request.connector_version,
-    )
-    db.add(heartbeat)
-    
-    # Commit transaction
-    db.commit()
-    db.refresh(heartbeat)
-    
-    return HeartbeatResponse(
-        status="ok",
-        device_id=x_device_id,
-        received_at=heartbeat.received_at,
-    )
+        db.add(heartbeat)
+        
+        # Commit transaction
+        db.commit()
+        db.refresh(heartbeat)
+        
+        logger.info(f"Heartbeat received from device {device.device_id}")
+        
+        return HeartbeatResponse(
+            status="ok",
+            device_id=device.device_id,
+            received_at=heartbeat.received_at,
+        )
+    except OperationalError as e:
+        # Check if error is about missing tables
+        error_msg = str(e).lower()
+        if "no such table" in error_msg or "does not exist" in error_msg:
+            logger.error("Database not initialized - missing tables")
+            raise HTTPException(
+                status_code=500,
+                detail="Database not initialized. Please run migrations: alembic upgrade head"
+            )
+        # Re-raise other operational errors
+        logger.error(f"OperationalError in heartbeat: {e}")
+        raise
 
