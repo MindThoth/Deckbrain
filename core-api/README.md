@@ -44,16 +44,18 @@ core-api/
   core/           - Shared settings, database initialization, security helpers, common utilities
   modules/        - Feature modules:
                     - devices/     - Device registration, API key management, summary endpoints
-                    - sync/        - Upload and heartbeat handling
-                    - ingest_olex/ - Olex file format parser (future)
-                    - ingest_maxsea/ - MaxSea file format parser (future)
-                    - trips/       - Trips and track APIs
-                    - history/     - Long-term coverage and marks
-                    - tow_notes/   - Text notes + log image uploads
-                    - updates/     - Version and update checks
-                    - ai_assist/   - AI-driven suggestions (future)
+                    - uploads/    - Upload and heartbeat handling
+                    - ingestion/  - Ingestion pipeline with vendor-agnostic parser architecture
+                    - trips/      - Trips and track APIs
+                    - history/    - Long-term coverage and marks (future)
+                    - tow_notes/  - Text notes + log image uploads (future)
+                    - updates/    - Version and update checks (future)
+                    - ai_assist/  - AI-driven suggestions (future)
+  alembic/        - Database migrations (Alembic):
+                    - versions/   - Migration files (001, 002, 003, etc.)
+                    - env.py      - Alembic configuration
+  scripts/        - Utility scripts (seed data, etc.)
   tests/          - Unit and integration tests (to be implemented)
-  migrations/     - Database migrations (Alembic or similar, to be implemented)
 ```
 
 ## API and Data Model
