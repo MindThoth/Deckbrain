@@ -42,6 +42,8 @@ class Device(Base):
     # Relationships
     heartbeats = relationship("Heartbeat", back_populates="device")
     file_records = relationship("FileRecord", back_populates="device")
+    trips = relationship("Trip", back_populates="device", cascade="all, delete-orphan")
+    soundings = relationship("Sounding", back_populates="device", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Device(device_id='{self.device_id}', name='{self.name}', plotter_type='{self.plotter_type}')>"

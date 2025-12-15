@@ -21,6 +21,7 @@ from core.db import get_db
 from core.models import Device, FileRecord
 from core.auth import get_authenticated_device
 from core.config import settings
+from modules.ingestion.service import ingest_file_safe
 
 
 logger = logging.getLogger(__name__)
@@ -174,13 +175,37 @@ async def upload_file(
         
         logger.info(f"File record created: id={file_record.id}, device={device.device_id}, size={size_bytes}, sha256={sha256_hash[:8]}...")
         
+        # Auto-trigger ingestion in development mode
+        final_processing_status = file_record.processing_status
+        if settings.app_env == "development":
+            logger.info(f"[AUTO-INGEST] Triggering ingestion for file_record_id={file_record.id} (dev mode)")
+            ingestion_result = ingest_file_safe(file_record.id, db)
+            
+            if ingestion_result["status"] == "success":
+                logger.info(f"[AUTO-INGEST] Ingestion completed successfully for file_record_id={file_record.id}")
+                logger.info(f"[AUTO-INGEST] Status: {ingestion_result.get('message', 'No message')}")
+                # Refresh file_record to get updated processing_status
+                db.refresh(file_record)
+                final_processing_status = file_record.processing_status
+            elif ingestion_result["status"] == "failed":
+                logger.warning(f"[AUTO-INGEST] Ingestion failed (parser) for file_record_id={file_record.id}: {ingestion_result.get('message')}")
+                db.refresh(file_record)
+                final_processing_status = file_record.processing_status
+            else:
+                # Error cases (FileNotFoundError, NoParserError, etc.)
+                logger.error(f"[AUTO-INGEST] Ingestion error for file_record_id={file_record.id}: {ingestion_result.get('error_type')} - {ingestion_result.get('message')}")
+                db.refresh(file_record)
+                final_processing_status = file_record.processing_status
+        else:
+            logger.debug(f"Auto-ingestion skipped (app_env={settings.app_env}, not 'development')")
+        
         return UploadResponse(
             status="ok",
             file_record_id=file_record.id,
             remote_path=relative_path,
             size_bytes=size_bytes,
             sha256=sha256_hash,
-            processing_status="stored"
+            processing_status=final_processing_status
         )
         
     except HTTPException:

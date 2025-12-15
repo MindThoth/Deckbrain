@@ -329,6 +329,153 @@ Gets track data for a specific trip.
 - Returns GeoJSON format, plotter-agnostic
 - Dashboard renders this identically regardless of source plotter
 
+### GET `/api/trips`
+
+Lists trips for a device (plotter-agnostic).
+
+**Query Parameters:**
+- `device_id` (string, required): Filter by device
+- `limit` (integer, optional, default 50, max 100): Maximum trips to return
+- `offset` (integer, optional, default 0): Number of trips to skip for pagination
+
+**Response:**
+```json
+{
+  "trips": [
+    {
+      "id": 123,
+      "device_id": 1,
+      "start_time": "2025-12-10T08:00:00Z",
+      "end_time": "2025-12-10T14:00:00Z",
+      "name": "Morning Trip - Dec 10",
+      "distance_nm": 12.5,
+      "duration_hours": 6.0,
+      "bounds": {
+        "min_lat": 42.0,
+        "max_lat": 42.2,
+        "min_lon": -70.5,
+        "max_lon": -70.3
+      },
+      "created_at": "2025-12-10T08:00:00Z"
+    }
+  ],
+  "total": 10,
+  "device_id": "test-vessel-001"
+}
+```
+
+**Notes:**
+- Returns trips sorted by start_time (most recent first)
+- Trips are normalized across all plotter types
+
+### GET `/api/trips/{trip_id}`
+
+Gets detailed information for a specific trip.
+
+**Path Parameters:**
+- `trip_id` (integer): ID of the trip
+
+**Response:**
+```json
+{
+  "trip": {
+    "id": 123,
+    "device_id": 1,
+    "start_time": "2025-12-10T08:00:00Z",
+    "end_time": "2025-12-10T14:00:00Z",
+    "name": "Morning Trip - Dec 10",
+    "distance_nm": 12.5,
+    "duration_hours": 6.0,
+    "bounds": {
+      "min_lat": 42.0,
+      "max_lat": 42.2,
+      "min_lon": -70.5,
+      "max_lon": -70.3
+    },
+    "tows": [
+      {
+        "id": 456,
+        "tow_number": 1,
+        "name": "Tow 1",
+        "start_time": "2025-12-10T09:00:00Z",
+        "end_time": "2025-12-10T10:00:00Z",
+        "distance_nm": 4.0,
+        "duration_hours": 1.0,
+        "avg_depth_m": 45.0,
+        "min_depth_m": 35.0,
+        "max_depth_m": 55.0
+      }
+    ]
+  }
+}
+```
+
+**Notes:**
+- Includes list of tows within the trip
+
+### GET `/api/trips/{trip_id}/track`
+
+Gets track data for a trip in GeoJSON format.
+
+**Path Parameters:**
+- `trip_id` (integer): ID of the trip
+
+**Query Parameters:**
+- `include_tows` (boolean, optional, default false): Include tow boundary features
+
+**Response:**
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-70.45, 42.05],
+          [-70.44, 42.06],
+          ...
+        ]
+      },
+      "properties": {
+        "type": "track",
+        "start_time": "2025-12-10T08:00:00Z",
+        "end_time": "2025-12-10T14:00:00Z",
+        "points_count": 360,
+        "points": [
+          {
+            "timestamp": "2025-12-10T08:00:00Z",
+            "depth": 45.0,
+            "latitude": 42.05,
+            "longitude": -70.45,
+            "speed_knots": 4.0,
+            "course_deg": 180.0,
+            "water_temp": 10.0
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+**Notes:**
+- Returns GeoJSON FeatureCollection ready for map visualization
+- Track data comes from soundings table
+- Coordinates in [lon, lat] order (GeoJSON standard)
+
+### GET `/api/trips/{trip_id}/tows/{tow_id}/track`
+
+Gets track data for a specific tow in GeoJSON format.
+
+**Path Parameters:**
+- `trip_id` (integer): ID of the trip
+- `tow_id` (integer): ID of the tow
+
+**Response:**
+Same format as `/api/trips/{trip_id}/track` but filtered to the specific tow.
+
 ## Additional Endpoints
 
 Additional endpoints for history, tow notes, and other features will be documented as they are implemented. All endpoints follow the same vendor-agnostic design: they work with normalized data structures and do not require plotter-specific logic.

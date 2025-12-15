@@ -38,6 +38,7 @@ Thumbs.db
 core-api/dev.db
 core-api/storage/
 core-api/test_*.dat
+core-api/test_*.txt
 core-api/*.dat
 
 # Logs

@@ -126,3 +126,62 @@ Every update (by humans or AI) must be recorded.
   - In dev mode, devices auto-register on first request with provided API key.
   - In production mode, devices must be pre-registered.
   - Unlocks safe connector development with proper authentication.
+
+### 2025-12-14 – v0.2.4-dev – branch: main
+- Model: Cursor (Claude Sonnet 4.5)
+- Changes:
+  - Introduced ingestion module with vendor-agnostic parsing architecture.
+  - Created modules/ingestion/ with parsers/, registry.py, service.py, and router.py.
+  - Implemented BaseParser abstract interface and ParseResult dataclass.
+  - Added stub parsers for Olex (OlexParser) and MaxSea (MaxSeaParser).
+  - Implemented parser registry for source_format-based routing.
+  - Built ingestion service orchestration (ingest_file, ingest_file_safe).
+  - Added manual ingestion trigger endpoint: POST /api/ingest/{file_record_id}.
+  - Added parser listing endpoint: GET /api/ingest/parsers.
+  - Updated processing_status semantics: stored → processing → parsed_stub/failed.
+  - Created comprehensive ingestion pipeline documentation (docs/engineering/ingestion_pipeline.md).
+  - Updated db_schema.md with detailed processing_status values.
+  - Registered ingestion router in app/main.py.
+- Notes:
+  - No real plotter parsing yet; parsers are stubs only.
+  - Parsers return successful ParseResult with no entities and clear stub messages.
+  - This establishes the ingestion backbone for future real parsing implementation.
+  - Upload flow remains unchanged; ingestion is triggered manually via API for now.
+
+### 2025-12-14 – v0.2.5-dev – branch: main
+- Model: Cursor (Claude Sonnet 4.5)
+- Changes:
+  - Wired automatic ingestion into upload endpoint (dev mode only).
+  - Upload endpoint now calls ingest_file_safe() after successful file storage.
+  - Auto-ingestion guarded by APP_ENV="development" check.
+  - Upload always succeeds even if ingestion fails (upload reliability preserved).
+  - Added [AUTO-INGEST] logging prefix for clear distinction.
+  - Upload response now returns final processing_status (parsed_stub or failed after ingestion).
+  - Updated ingestion_pipeline.md with "Automatic Ingestion (Dev Mode)" section.
+- Notes:
+  - End-to-end flow now works: upload → stored → auto-ingest → parsed_stub.
+  - Parsing remains stub-only (no real data extraction).
+  - Ingestion runs synchronously in dev; will use background jobs in production.
+  - Manual ingestion endpoint still available for testing/debugging.
+
+### 2025-12-14 – v0.2.6-dev – branch: main
+- Model: Cursor (Claude Sonnet 4.5)
+- Changes:
+  - Created Trip, Tow, Sounding database models (normalized across all plotter types).
+  - Added Alembic migration (003) for trips, tows, soundings tables with proper indexes.
+  - Updated Device model with trips and soundings relationships.
+  - Built trips API module (modules/trips/) with full endpoint suite:
+    - GET /api/trips - list trips with pagination
+    - GET /api/trips/{trip_id} - get trip details with tows
+    - GET /api/trips/{trip_id}/track - get GeoJSON track data
+    - GET /api/trips/{trip_id}/tows/{tow_id}/track - get tow track data
+  - Created GeoJSON utilities for converting soundings to map-ready format.
+  - Created seed script (scripts/seed_mock_trips.py) for mock trip data generation.
+  - Registered trips router in app/main.py.
+  - Updated docs/api_spec.md with trips endpoint documentation.
+- Notes:
+  - Trips vertical slice (v0.2) Core API backend is complete.
+  - Mock data includes 3 trips with 4 tows and ~345 soundings.
+  - All trip data is normalized and plotter-agnostic.
+  - Ready for dashboard integration (Next.js).
+  - Real parsing will populate these tables when implemented.

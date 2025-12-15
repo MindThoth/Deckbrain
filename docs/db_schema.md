@@ -45,7 +45,13 @@ Tracks all files uploaded from connectors.
 - `local_path` (string, nullable): Path where the file is stored on disk
 - `remote_path` (string, nullable): Object storage path (future, when S3/GCS is implemented)
 - `size_bytes` (integer, nullable): File size in bytes
-- `processing_status` (string, not null, default "pending"): `"pending"`, `"processed"`, `"failed"`
+- `processing_status` (string, not null, default "pending"): Processing status of the file
+  - `"pending"`: File queued for upload (not yet uploaded)
+  - `"stored"`: File successfully uploaded and stored, awaiting ingestion
+  - `"processing"`: File is currently being parsed by an ingestion module
+  - `"parsed_stub"`: File successfully parsed (stub only - no real entities extracted yet)
+  - `"processed"`: File successfully parsed and entities extracted (future - when real parsing is implemented)
+  - `"failed"`: Parsing failed or no parser available
 - `uploaded_at` (timestamp with timezone)
 - Additional metadata as needed
 
