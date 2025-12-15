@@ -28,3 +28,5 @@ Authentication: `X-Device-ID` and `X-API-Key` headers.
 ## Status
 
 Scaffolding only. Implementation will be added in future phases.
+
+For details on the shared core, see `shared/README.md`.
