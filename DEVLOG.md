@@ -205,3 +205,20 @@ Every update (by humans or AI) must be recorded.
   - Start/end markers and popups with trip details.
   - Ready for real trip data when parsing is implemented.
   - Next: v0.3 (Tow Notes) or implement real Olex/MaxSea parsing.
+
+### 2025-12-15 – v0.2.8-dev – branch: main
+- Model: Cursor (Claude Sonnet 4.5)
+- Changes:
+  - Added research documentation structure for Olex and MaxSea parsing preparation.
+  - Created docs/research/olex/README.md with comprehensive file format checklist.
+  - Created docs/research/maxsea/README.md with comprehensive file format checklist.
+  - Added gitignored sample drop folders (samples/olex/, samples/maxsea/).
+  - Created scripts/inspect_plotter_file.py - lightweight file inspection tool.
+  - Tool inspects unknown plotter files without parsing (shows size, hash, type, structure).
+  - Supports text preview, hex dump, ZIP inspection, encoding detection.
+  - Updated .gitignore to exclude sample files but preserve .gitkeep markers.
+- Notes:
+  - This is preparatory work to accelerate real parser implementation once sample files are available.
+  - No parsing logic added - parsers remain stubs.
+  - Research docs provide structured checklists for analyzing Olex and MaxSea file formats.
+  - Inspection tool helps quickly understand unknown file formats without manual hex editors.

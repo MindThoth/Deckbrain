@@ -48,3 +48,7 @@ core-api/*.dat
 *.tmp
 *.bak
 
+# Sample plotter files (research only - never commit real vessel data)
+samples/**/*
+!samples/**/.gitkeep
+
