@@ -185,3 +185,23 @@ Every update (by humans or AI) must be recorded.
   - All trip data is normalized and plotter-agnostic.
   - Ready for dashboard integration (Next.js).
   - Real parsing will populate these tables when implemented.
+
+### 2025-12-15 – v0.2.7-dev – branch: main
+- Model: Cursor (Claude Sonnet 4.5)
+- Changes:
+  - Built Next.js dashboard with map-based trips visualization.
+  - Created dashboard structure with core/ and features/ directories.
+  - Implemented API client with TypeScript types matching Core API.
+  - Built MapView component using Leaflet for track display.
+  - Created TripList sidebar component with trip selection.
+  - Wired trips page with sidebar + map layout.
+  - Applied marine-focused styling with custom ocean/nautical Tailwind theme.
+  - Added configuration system with environment variables.
+  - Consolidated connector documentation (removed redundant READMEs).
+- Notes:
+  - v0.2 Trips Vertical Slice is now COMPLETE (Core API + Dashboard end-to-end).
+  - Dashboard displays mock trip data with interactive map.
+  - Map shows trip tracks as blue LineStrings, tow boundaries as orange lines.
+  - Start/end markers and popups with trip details.
+  - Ready for real trip data when parsing is implemented.
+  - Next: v0.3 (Tow Notes) or implement real Olex/MaxSea parsing.
